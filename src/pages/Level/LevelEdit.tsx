@@ -10,6 +10,7 @@ import ProductTwo from '../../images/product/product-02.png';
 import ProductThree from '../../images/product/product-03.png';
 import ProductFour from '../../images/product/product-04.png';
 import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
+import { Content, ItemQuest, Question, nextItem } from '../../types/Questions';
 
 type LevelEditParams = {
     id: string;
@@ -18,68 +19,89 @@ type LevelEditParams = {
 
 const productData: Product[] = [
     {
-      image: ProductOne,
-      name: 'Apple Watch Series 7',
-      category: 'Electronics',
-      price: 296,
-      sold: 22,
-      profit: 45,
+        image: ProductOne,
+        name: 'Apple Watch Series 7',
+        category: 'Electronics',
+        price: 296,
+        sold: 22,
+        profit: 45,
     },
     {
-      image: ProductTwo,
-      name: 'Macbook Pro M1',
-      category: 'Electronics',
-      price: 546,
-      sold: 12,
-      profit: 125,
+        image: ProductTwo,
+        name: 'Macbook Pro M1',
+        category: 'Electronics',
+        price: 546,
+        sold: 12,
+        profit: 125,
     },
     {
-      image: ProductThree,
-      name: 'Dell Inspiron 15',
-      category: 'Electronics',
-      price: 443,
-      sold: 64,
-      profit: 247,
+        image: ProductThree,
+        name: 'Dell Inspiron 15',
+        category: 'Electronics',
+        price: 443,
+        sold: 64,
+        profit: 247,
     },
     {
-      image: ProductFour,
-      name: 'HP Probook 450',
-      category: 'Electronics',
-      price: 499,
-      sold: 72,
-      profit: 103,
+        image: ProductFour,
+        name: 'HP Probook 450',
+        category: 'Electronics',
+        price: 499,
+        sold: 72,
+        profit: 103,
     },
-  ];
+];
 // Tipos de dados
 interface Item {
-    id: string;
-    content: string;
-  }
-  
-  // Função para reordenar a lista
-  const reorder = (list: Item[], startIndex: number, endIndex: number): Item[] => {
-    const result = Array.from(list);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-  
-    return result;
-  };
+    id: number;
+    text: string;
+}
 
 const LevelEdit = () => {
-    const { id } = useParams<LevelEditParams>();
-    const [level, setLevel] = useState<any>({})
+    const { id } = useParams<LevelEditParams>();    
     const [title, setTitle] = useState<string>()
     const [active, setActive] = useState<boolean>()
+    const [questions, setQuestions] = useState<Question[]>([])
+    const [contents, setContents] = useState<Content[]>([])
+    const [itemQuest, setItemQuest] = useState<nextItem[]>([])
+    const [quests, setQuests] = useState<ItemQuest>()
 
     useEffect(() => {
 
         httpInstance
             .get(`/Level/infos/${id}`)
             .then((response) => {
-                console.log(response.data)
-                setLevel(response.data.level)
+                console.log(response.data)                
                 setTitle(response.data.level.title)
-                setActive(response.data.level.active)
+                setActive(response.data.level.active)                                
+                response.data.questions.map((item: any) => {
+                    if(questions.filter(x => x.id === item.id).length === 0){
+                        const quest = new Question(item.id)
+                        quest.title = item.title
+                        quest.nextContetId = item.nextContetId
+                        quest.nextQuestionId = item.nextQuestionId
+                        quest.previusContetId = item.previusContetId
+                        quest.previusQuestionId = item.previusQuestionId
+                        questions.push(quest)
+                    }
+                })                
+                response.data.contents.map((item: any) => {
+                    if(contents.filter(x => x.id === item.id).length === 0){
+                        const cont = new Content(item.id)
+                        cont.title = item.title
+                        cont.text = item.text
+                        cont.nextContetId = item.nextContetId
+                        cont.nextQuestionId = item.nextQuestionId
+                        cont.previusContetId = item.previusContetId
+                        cont.previusQuestionId = item.previusQuestionId
+                        contents.push(cont)
+                    }
+                })   
+                if(questions.length > 0 && contents.length > 0){
+                    const newQuest = new ItemQuest(questions,contents)                           
+                    console.log(newQuest.getLinkedList())
+                    setItemQuest(newQuest.getLinkedList())
+                }
             })
             .catch((error) => {
                 console.error("Erro ao buscar dados:", error);
@@ -87,7 +109,81 @@ const LevelEdit = () => {
 
     }, [id])
 
+
     const sendEdit = () => {
+        for(var i = 0; i < itemQuest.length;i++){
+            let item = itemQuest[i]
+            let next = itemQuest[i + 1] 
+            let prev = itemQuest[i - 1] 
+            if(i == 0){                
+                if(item.type == 'question'){
+                    item.quest.previusContetId = null
+                    item.quest.previusQuestionId = null
+                    if(next.type === 'question'){
+                        item.quest.nextQuestionId = next.quest.id
+                    }else{
+                        item.quest.nextContetId = next.content.id
+                    }
+                }else{
+                    item.content.previusContetId = null
+                    item.content.previusQuestionId = null
+                    if(next.type === 'question'){
+                        item.content.nextQuestionId = next.quest.id
+                    }else{
+                        item.content.nextContetId = next.content.id
+                    }
+                }
+
+                continue
+            }else if (i === itemQuest.length - 1){
+                if(item.type == 'question'){
+                    item.quest.nextContetId = null
+                    item.quest.nextQuestionId = null
+                    if(prev.type === 'question'){
+                        item.quest.previusQuestionId = prev.quest.id
+                    }else{
+                        item.quest.previusContetId = prev.content.id
+                    }
+                }else{
+                    item.content.nextContetId = null
+                    item.content.nextQuestionId = null
+                    if(prev.type === 'question'){
+                        item.content.previusQuestionId = prev.quest.id
+                    }else{
+                        item.content.previusContetId = prev.content.id
+                    }
+                }
+                continue
+            }   
+            
+            if(item.type == 'question'){
+                if(next.type === 'question'){
+                    item.quest.nextQuestionId = next.quest.id
+                }else{
+                    item.quest.nextContetId = next.content.id
+                }
+                if(prev.type === 'question'){
+                    item.quest.previusQuestionId = prev.quest.id
+                }else{
+                    item.quest.previusContetId = prev.content.id
+                }
+            }else{
+                if(next.type == 'question'){
+                    item.content.nextQuestionId = next.quest.id
+                }else{
+                    item.content.nextContetId = next.content.id
+                }
+                
+                if(prev.type === 'question'){
+                    item.content.previusQuestionId = prev.quest.id
+                }else{
+                    item.content.previusContetId = prev.content.id
+                }
+            }       
+        }
+
+        console.log(itemQuest)
+
         httpInstance
             .put(`/Level/Edit/${id}`, {
                 title: title,
@@ -98,87 +194,32 @@ const LevelEdit = () => {
             })
     }
 
-    const [items, setItems] = useState<Item[]>([
-        { id: '1', content: 'Item 1' },
-        { id: '2', content: 'Item 2' },
-        { id: '3', content: 'Item 3' },
-        { id: '4', content: 'Item 4' },
-      ]);
-    
-      // Função para lidar com o final do drag
-      const onDragEnd = (result: DropResult) => {
-        if (!result.destination) {
-          return; // Se for fora de uma área droppable, não faz nada
+    const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+
+    const handleDragStart = (index: number) => {
+        setDraggedItemIndex(index);
+    };
+
+    const handleDrop = (index: number) => {
+        if (draggedItemIndex !== null) {
+            const updatedItems = [...itemQuest];
+            const [draggedItem] = updatedItems.splice(draggedItemIndex, 1);
+            updatedItems.splice(index, 0, draggedItem);
+            setItemQuest(updatedItems);
+            console.log('Lista reordenada:', updatedItems); // Console.log da lista reordenada
+            setDraggedItemIndex(null);
         }
-    
-        const reorderedItems = reorder(
-          items,
-          result.source.index,
-          result.destination.index
-        );
-    
-        setItems(reorderedItems); // Atualiza a lista
-      };
-    
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
 
     return (
         <>
             <Breadcrumb pageName="Levels Edit" />
 
-            <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="droppable">
-        {(provided) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-          >
-              <Draggable key={'1'} draggableId={'1'} index={0}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    style={{
-                      userSelect: 'none',
-                      padding: 16,
-                      margin: '0 0 8px 0',
-                      backgroundColor: '#fff',
-                      border: '1px solid lightgrey',
-                      borderRadius: '4px',
-                      ...provided.draggableProps.style,
-                    }}
-                  >
-                111
-                  </div>
-                )}
-              </Draggable>
 
-              <Draggable key={'2'} draggableId={'2'} index={1}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    style={{
-                      userSelect: 'none',
-                      padding: 16,
-                      margin: '0 0 8px 0',
-                      backgroundColor: '#fff',
-                      border: '1px solid lightgrey',
-                      borderRadius: '4px',
-                      ...provided.draggableProps.style,
-                    }}
-                  >
-                222
-                  </div>
-                )}
-              </Draggable>
-
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
 
             <div className="grid grid-cols-1 gap-9 ">
                 <div className="flex flex-col gap-9">
@@ -243,13 +284,13 @@ const LevelEdit = () => {
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                         <div className="py-6 px-4 md:px-6 xl:px-7.5">
                             <h4 className="text-xl font-semibold text-black dark:text-white">
-                                Top Products
+                                Questions & contents
                             </h4>
                         </div>
 
                         <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
                             <div className="col-span-3 flex items-center">
-                                <p className="font-medium">Product Name</p>
+                                <p className="font-medium">Title</p>
                             </div>
                             <div className="col-span-2 hidden items-center sm:flex">
                                 <p className="font-medium">Category</p>
@@ -265,36 +306,37 @@ const LevelEdit = () => {
                             </div>
                         </div>
 
-                        {productData.map((product, key) => (
+                        {itemQuest.map((item, key) => (
                             <div
                                 className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5"
                                 key={key}
+                                draggable
+                                onDragStart={() => handleDragStart(key)}
+                                onDragOver={handleDragOver}
+                                onDrop={() => handleDrop(key)}
                             >
                                 <div className="col-span-3 flex items-center">
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                        <div className="h-12.5 w-15 rounded-md">
-                                            <img src={product.image} alt="Product" />
-                                        </div>
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">                                        
                                         <p className="text-sm text-black dark:text-white">
-                                            {product.name}
+                                            {item.type === 'question' ? item.quest.title : item.content.title}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="col-span-2 hidden items-center sm:flex">
                                     <p className="text-sm text-black dark:text-white">
-                                        {product.category}
+                                        aa
                                     </p>
                                 </div>
                                 <div className="col-span-1 flex items-center">
                                     <p className="text-sm text-black dark:text-white">
-                                        ${product.price}
+                                        cc
                                     </p>
                                 </div>
                                 <div className="col-span-1 flex items-center">
-                                    <p className="text-sm text-black dark:text-white">{product.sold}</p>
+                                    <p className="text-sm text-black dark:text-white">dd</p>
                                 </div>
                                 <div className="col-span-1 flex items-center">
-                                    <p className="text-sm text-meta-3">${product.profit}</p>
+                                    <p className="text-sm text-meta-3">ee</p>
                                 </div>
                             </div>
                         ))}
