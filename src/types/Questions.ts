@@ -1,3 +1,21 @@
+export class Option {
+    public id: string;
+    public title: string;
+    public order: number;
+    public correct: boolean;
+    public points: number;
+    public questionId: string;
+
+    constructor(item: any){
+        this.id = item.id
+        this.title = item.title
+        this.order = item.order;
+        this.correct = item.correct;
+        this.points = item.points;
+        this.questionId = item.questionId
+    }
+}
+
 export class Question {
     public title!: string;
     public type!: string;
@@ -5,8 +23,17 @@ export class Question {
     public nextContetId!: string | null;
     public previusQuestionId!: string | null;
     public previusContetId!: string | null;
+    public options!: Option[]
 
     constructor(public id: string) { }
+
+    setTitle(title: string){
+        this.title = title
+    }
+
+    setType(type: string){
+        this.type = type
+    }
 
     getNextItem(lista: Question[], contents: Content[]): nextItem | undefined {
         if (this.nextQuestionId != null) {
