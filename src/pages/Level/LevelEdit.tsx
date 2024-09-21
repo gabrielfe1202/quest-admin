@@ -3,10 +3,12 @@ import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBox, faChevronDown, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { httpInstance } from '../../services/HttpRequest';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 // biome-ignore lint/style/useImportType: <explanation>
 import { Content, ItemQuest, Option, Question, nextItem } from '../../types/Questions';
 import Modal from '../../components/Modal';
+import { Bounce, ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type LevelEditParams = {
     id: string;
@@ -17,15 +19,17 @@ const LevelEdit = () => {
     const { id } = useParams<LevelEditParams>();
     const [title, setTitle] = useState<string>()
     const [active, setActive] = useState<boolean>()
-    const [questions, setQuestions] = useState<Question[]>([])
-    const [contents, setContents] = useState<Content[]>([])
+    const [questions] = useState<Question[]>([])
+    const [contents] = useState<Content[]>([])
     const [itemQuest, setItemQuest] = useState<nextItem[]>([])
-    const [quests, setQuests] = useState<ItemQuest>()
     const [currentEditQuest, setCurrentEditQuest] = useState<Question>()
-    const [selectedOption, setSelectedOption] = useState<string>('');
+    const [questEditTitle, setQuesEditTitle] = useState<string>('')
+    const [questEditType, setQuesEditType] = useState<string>('')
     const [currentOptionIndex, setCurrentOptionIndex] = useState<number | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
+    const [alter, setAlter] = useState<boolean>(false)
+    const navigate = useNavigate()
 
     const changeTextColor = () => {
         setIsOptionSelected(true);
@@ -33,6 +37,18 @@ const LevelEdit = () => {
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
+
+        toast.success('🦄 Wow so easy!', {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+            transition: Bounce,
+        });
 
         httpInstance
             .get(`/Level/infos/${id}`)
@@ -46,11 +62,13 @@ const LevelEdit = () => {
                         const quest = new Question(item.id)
                         const opts: Option[] = []
                         quest.title = item.title
+                        quest.type = item.type
                         quest.nextContetId = item.nextContetId
                         quest.nextQuestionId = item.nextQuestionId
                         quest.previusContetId = item.previusContetId
                         quest.previusQuestionId = item.previusQuestionId
 
+                        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                         item.options.map((opt: any) => {
                             opts.push(new Option(opt))
                         })
@@ -216,15 +234,15 @@ const LevelEdit = () => {
         setDragOverIndex(null);
     };
 
-    
+
     const handleDropOption = (index: number) => {
-        if (draggedItemIndex !== null) {
-            //const updatedItems = [...itemQuest];
-            //const [draggedItem] = updatedItems.splice(draggedItemIndex, 1);
-            //updatedItems.splice(index, 0, draggedItem);
-            //setItemQuest(updatedItems);
-            //console.log('Lista reordenada:', updatedItems); // Console.log da lista reordenada
-            //setDraggedItemIndex(null);
+        if (draggedItemIndex !== null && currentEditQuest?.options !== undefined) {
+            const updatedItems = [...currentEditQuest.options];
+            const [draggedItem] = updatedItems.splice(draggedItemIndex, 1);
+            updatedItems.splice(index, 0, draggedItem);
+            currentEditQuest.options = updatedItems
+            console.log('Lista reordenada:', updatedItems); // Console.log da lista reordenada
+            setDraggedItemIndex(null);
         }
         setDragOverIndex(null);
     };
@@ -244,11 +262,28 @@ const LevelEdit = () => {
 
     function editQuest(quest: Question) {
         setCurrentEditQuest(quest)
+        setQuesEditTitle(quest.title)
+        setQuesEditType(quest.type)
         openModal()
     }
 
     return (
         <>
+
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+
+            />
+
             <Breadcrumb pageName="Levels Edit" />
 
 
@@ -257,15 +292,10 @@ const LevelEdit = () => {
                 <div className="flex flex-col gap-9">
                     {/* <!-- Input Fields --> */}
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                        <div className="border-b border-stroke py-4 px-6.5 dark:border-strokedark">
-                            <h3 className="font-medium text-black dark:text-white">
-                                Input Fields
-                            </h3>
-                        </div>
                         <div className="flex flex-col gap-5.5 p-6.5">
                             <div>
                                 <label className="mb-3 block text-black dark:text-white" htmlFor='title'>
-                                    Default Input
+                                    Title
                                 </label>
                                 <input
                                     type="text"
@@ -273,144 +303,136 @@ const LevelEdit = () => {
                                     placeholder="Default Input"
                                     className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                                     value={title}
-                                    onChange={(t) => setTitle(t.target.value)}
+                                    onChange={(t) => {setTitle(t.target.value);setAlter(true)}}
                                 />
+
                             </div>
 
-                            <div>
-                                <label
-                                    htmlFor="toggle4"
-                                    className="flex cursor-pointer select-none items-center"
-                                >
-                                    <div className="relative">
-                                        <input
-                                            type="checkbox"
-                                            id="toggle4"
-                                            className="sr-only"
-                                            onChange={() => {
-                                                setActive(!active)
-                                            }}
-                                        />
-                                        <div className={`block h-8 w-14 rounded-full bg-black ${active && 'bg-green-600'}`} />
-                                        <div
-                                            className={`absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white transition ${active && '!right-1 !translate-x-full'
-                                                }`}
-                                        />
+
+                            <div className="flex flex-col gap-9">
+                                <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                                    <div className="py-6 px-4 md:px-6 xl:px-7.5">
+                                        <h4 className="text-xl font-semibold text-black dark:text-white">
+                                            Questions & contents
+                                        </h4>
                                     </div>
-                                </label>
+
+                                    <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
+                                        <div className="col-span-3 flex items-center">
+                                            <p className="font-medium">Title</p>
+                                        </div>
+                                        <div className="col-span-2 hidden items-center sm:flex">
+                                            <p className="font-medium">Options</p>
+                                        </div>
+                                        <div className="col-span-1 flex items-center">
+                                            <p className="font-medium">Type</p>
+                                        </div>
+                                        <div className="col-span-1 flex items-center">
+                                            <p className="font-medium">Actions</p>
+                                        </div>
+                                    </div>
+
+                                    {itemQuest.map((item, key) => (
+                                        <div
+                                            className={`grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5 ${isDragging ? 'opacity-50' : 'opacity-100'
+                                                } ${dragOverIndex !== null ? 'border-dashed border-4 border-blue-500' : ''}`}
+                                            key={key.toString()}
+                                            draggable
+                                            onDragStart={() => onDragStart(key)}
+                                            onDragEnd={onDragEnd}
+                                            onDragOver={(e) => onDragOver(e, key)}
+                                            onDrop={() => handleDrop(key)}
+                                        >
+                                            {item.type === 'question' ? (
+                                                <>
+                                                    <div className="col-span-3 flex items-center">
+                                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                                            <p className="text-sm text-black dark:text-white">
+                                                                {item.quest.title}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-span-2 hidden items-center sm:flex">
+                                                        <p className="text-sm text-black dark:text-white">
+                                                            {item.quest.options.length}
+                                                        </p>
+                                                    </div>
+                                                    <div className="col-span-1 flex items-center">
+                                                        <p className="text-sm text-black dark:text-white">
+                                                            {item.quest.type}
+                                                        </p>
+                                                    </div>
+                                                    <div className="col-span-1 flex items-center">
+                                                        <div className="flex items-center space-x-3.5">
+                                                            <button type='button' className="hover:text-primary" onClick={() => { editQuest(item.quest) }}>
+                                                                <FontAwesomeIcon icon={faEdit} />
+                                                            </button>
+                                                            <button type='button' className="hover:text-primary">
+                                                                <FontAwesomeIcon icon={faTrash} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="col-span-3 flex items-center">
+                                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                                            <p className="text-sm text-black dark:text-white">
+                                                                {item.content.title}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-span-2 hidden items-center sm:flex">
+                                                        <p className="text-sm text-black dark:text-white">
+                                                            -
+                                                        </p>
+                                                    </div>
+                                                    <div className="col-span-1 flex items-center">
+                                                        <p className="text-sm text-black dark:text-white">
+                                                            Content
+                                                        </p>
+                                                    </div>
+                                                    <div className="col-span-1 flex items-center">
+                                                        <div className="flex items-center space-x-3.5">
+                                                            <button type='button' className="hover:text-primary" onClick={() => { }}>
+                                                                <FontAwesomeIcon icon={faEdit} />
+                                                            </button>
+                                                            <button type='button' className="hover:text-primary">
+                                                                <FontAwesomeIcon icon={faTrash} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
-                            <button
-                                type='button'
-                                className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
-                                onClick={sendEdit}
-                            >
-                                envia
-                            </button>
+
+                            <div className='flex flex-row justify-start gap-4'>
+                                <button
+                                    type='button'
+                                    className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75'
+                                    onClick={sendEdit}
+                                    disabled={!alter}
+                                >
+                                    Save
+                                </button>
+
+                                <button
+                                    type='button'
+                                    className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75'
+                                    onClick={() => navigate(`/Level/Publish/${id}`)}
+                                    disabled={alter}
+                                >
+                                    Publish
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                </div>
-
-                <div className="flex flex-col gap-9">
-                    <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                        <div className="py-6 px-4 md:px-6 xl:px-7.5">
-                            <h4 className="text-xl font-semibold text-black dark:text-white">
-                                Questions & contents
-                            </h4>
-                        </div>
-
-                        <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
-                            <div className="col-span-3 flex items-center">
-                                <p className="font-medium">Title</p>
-                            </div>
-                            <div className="col-span-2 hidden items-center sm:flex">
-                                <p className="font-medium">Options</p>
-                            </div>
-                            <div className="col-span-1 flex items-center">
-                                <p className="font-medium">Views</p>
-                            </div>
-                            <div className="col-span-1 flex items-center">
-                                <p className="font-medium">Actions</p>
-                            </div>
-                        </div>
-
-                        {itemQuest.map((item, key) => (
-                            <div
-                                className={`grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5 ${isDragging ? 'opacity-50' : 'opacity-100'
-                                    } ${dragOverIndex !== null ? 'border-dashed border-4 border-blue-500' : ''}`}
-                                key={key.toString()}
-                                draggable
-                                onDragStart={() => onDragStart(key)}
-                                onDragEnd={onDragEnd}
-                                onDragOver={(e) => onDragOver(e, key)}
-                                onDrop={() => handleDrop(key)}
-                            >
-                                {item.type === 'question' ? (
-                                    <>
-                                        <div className="col-span-3 flex items-center">
-                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                                <p className="text-sm text-black dark:text-white">
-                                                    {item.quest.title}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2 hidden items-center sm:flex">
-                                            <p className="text-sm text-black dark:text-white">
-                                                {item.quest.options.length}
-                                            </p>
-                                        </div>
-                                        <div className="col-span-1 flex items-center">
-                                            <p className="text-sm text-black dark:text-white">
-                                                20
-                                            </p>
-                                        </div>
-                                        <div className="col-span-1 flex items-center">
-                                            <div className="flex items-center space-x-3.5">
-                                                <button type='button' className="hover:text-primary" onClick={() => { editQuest(item.quest) }}>
-                                                    <FontAwesomeIcon icon={faEdit} />
-                                                </button>
-                                                <button type='button' className="hover:text-primary">
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="col-span-3 flex items-center">
-                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                                <p className="text-sm text-black dark:text-white">
-                                                    {item.content.title}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2 hidden items-center sm:flex">
-                                            <p className="text-sm text-black dark:text-white">
-                                                0
-                                            </p>
-                                        </div>
-                                        <div className="col-span-1 flex items-center">
-                                            <p className="text-sm text-black dark:text-white">
-                                                20
-                                            </p>
-                                        </div>
-                                        <div className="col-span-1 flex items-center">
-                                            <div className="flex items-center space-x-3.5">
-                                                <button type='button' className="hover:text-primary" onClick={openModal}>
-                                                    <FontAwesomeIcon icon={faEdit} />
-                                                </button>
-                                                <button type='button' className="hover:text-primary">
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-
-                            </div>
-                        ))}
-                    </div>
                 </div>
 
             </div>
@@ -428,9 +450,9 @@ const LevelEdit = () => {
                         </span>
 
                         <select
-                            value={currentEditQuest?.type}
+                            value={questEditType}
                             onChange={(e) => {
-                                currentEditQuest?.setType(e.target.value)
+                                setQuesEditType(e.target.value)
                                 changeTextColor();
                             }}
                             className={`relative z-20 w-full appearance-none rounded border border-stroke bg-transparent py-3 px-12 outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input ${isOptionSelected ? 'text-black dark:text-white' : ''}`}
@@ -450,7 +472,6 @@ const LevelEdit = () => {
                         </select>
 
                         <span className="absolute top-1/2 right-4 z-10 -translate-y-1/2">
-                            {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
                             <FontAwesomeIcon icon={faChevronDown} />
                         </span>
                     </div>
@@ -465,14 +486,14 @@ const LevelEdit = () => {
                             type="text"
                             placeholder="Default Input"
                             className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                            value={currentEditQuest?.title}
-                            onChange={(e) => {currentEditQuest?.setTitle(e.target.value)}}
+                            value={questEditTitle}
+                            onChange={(e) => { setQuesEditTitle(e.target.value) }}
                         />
                     </div>
 
 
-                    <div className="flex flex-col gap-9 mt-8">
-                        <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                    <div className="flex flex-col gap-4 mt-8 justify-end items-end">
+                        <div className="rounded-sm w-full border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                             <div className="py-2 px-4 md:px-4 xl:px-5">
                                 <h4 className="text-lg font-semibold text-black dark:text-white">
                                     Options
@@ -484,10 +505,10 @@ const LevelEdit = () => {
                                     <p className="font-medium">Title</p>
                                 </div>
                                 <div className="col-span-2 hidden items-center sm:flex">
-                                    <p className="font-medium">Options</p>
+                                    <p className="font-medium">Correct</p>
                                 </div>
                                 <div className="col-span-1 flex items-center">
-                                    <p className="font-medium">Views</p>
+                                    <p className="font-medium">Points</p>
                                 </div>
                                 <div className="col-span-1 flex items-center">
                                     <p className="font-medium">Actions</p>
@@ -515,7 +536,11 @@ const LevelEdit = () => {
                                                 </div>
                                             </div>
                                             <div className="col-span-2 hidden items-center sm:flex">
-                                                <p className="text-sm text-black dark:text-white">
+                                                <p
+                                                    className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${item.correct
+                                                        ? 'bg-success text-success'
+                                                        : 'bg-danger text-danger'}`}
+                                                >
                                                     {item.correct ? "True" : "False"}
                                                 </p>
                                             </div>
@@ -536,7 +561,16 @@ const LevelEdit = () => {
                                             </div>
                                         </div>
                                         {currentOptionIndex === key && (
-                                            <div className='p-6 border-solid border-t-[1.5px] border-stroke'>
+                                            <div className='p-6 border-solid border-t-[1.5px] border-stroke relative'>
+
+                                                <button
+                                                    type='button'
+                                                    className="absolute top-3 right-5 text-gray-600 font-bold hover:text-gray-800"
+                                                    onClick={() => { setCurrentOptionIndex(null) }}
+                                                >
+                                                    &#10005;
+                                                </button>
+
                                                 <div className='grid grid-cols-2 gap-4'>
                                                     <div className=''>
                                                         <label className="mb-1 block text-black dark:text-white" htmlFor=''>
@@ -565,17 +599,25 @@ const LevelEdit = () => {
                                                 </div>
                                                 <button
                                                     type='button'
-                                                    className='w-24 mt-5 inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'                                                    
-                                                    onClick={() => {}}
+                                                    className='w-24 mt-5 inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
+                                                    onClick={() => { }}
                                                 >
-                                                    envia
+                                                    Save
                                                 </button>
                                             </div>
                                         )}
                                     </>
                                 )
                             })}
+
                         </div>
+                        <button
+                            type='button'
+                            className='w-32 mt-1 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
+                            onClick={() => { }}
+                        >
+                            Save
+                        </button>
                     </div>
 
                 </div>

@@ -1,11 +1,5 @@
-import type React from 'react';
-import { useState } from 'react';
 
-interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-}
-
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const Modal = ({ isOpen, onClose, children }: any) => {
     return (
         <>

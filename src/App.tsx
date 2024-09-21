@@ -17,11 +17,14 @@ import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Level from './pages/Level/Index';
 import LevelEdit from './pages/Level/LevelEdit';
+import LevelPublish from './pages/Level/LevelPublish';
+
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const { pathname } = useLocation();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(( ) => {
     window.scrollTo(0, 0);
 
@@ -158,6 +161,16 @@ function App() {
           <DefaultLayout>
             <PageTitle title="Edit level" />
             <LevelEdit />
+          </DefaultLayout>
+        }
+      />
+
+      <Route
+        path="/Level/Publish/:id"
+        element={
+          <DefaultLayout>
+            <PageTitle title="Publish level" />
+            <LevelPublish />            
           </DefaultLayout>
         }
       />

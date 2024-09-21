@@ -35,6 +35,9 @@ const Level = () => {
 									</th>
 									<th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
 										Status
+									</th>									
+									<th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
+										Order
 									</th>
 									<th className="py-4 px-4 font-medium text-black dark:text-white">
 										Actions
@@ -59,6 +62,13 @@ const Level = () => {
 											>
 												{item.active ? "active" : "inactive"}
 											</p>
+										</td>
+
+										
+										<td className="border-b border-[#eee] py-5 px-4 pl-9 dark:border-strokedark xl:pl-11">
+											<h5 className="font-medium text-black dark:text-white">
+												{item.order}
+											</h5>
 										</td>
 
 										<td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
