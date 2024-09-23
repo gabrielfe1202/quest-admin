@@ -19,6 +19,7 @@ const LevelEdit = () => {
     const { id } = useParams<LevelEditParams>();
     const [title, setTitle] = useState<string>()
     const [active, setActive] = useState<boolean>()
+    const [order, setOrder] = useState<number>(0)
     const [questions] = useState<Question[]>([])
     const [contents] = useState<Content[]>([])
     const [itemQuest, setItemQuest] = useState<nextItem[]>([])
@@ -28,6 +29,7 @@ const LevelEdit = () => {
     const [currentOptionIndex, setCurrentOptionIndex] = useState<number | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isOptionSelected, setIsOptionSelected] = useState<boolean>(false);
+    const [reorderQuests, setReorderQuests] = useState<boolean>(false)
     const [alter, setAlter] = useState<boolean>(false)
     const navigate = useNavigate()
 
@@ -38,24 +40,13 @@ const LevelEdit = () => {
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
 
-        toast.success('🦄 Wow so easy!', {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "colored",
-            transition: Bounce,
-        });
-
         httpInstance
             .get(`/Level/infos/${id}`)
             .then((response) => {
                 console.log(response.data)
                 setTitle(response.data.level.title)
                 setActive(response.data.level.active)
+                setOrder(response.data.level.order)
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 response.data.questions.map((item: any) => {
                     if (questions.filter(x => x.id === item.id).length === 0) {
@@ -187,12 +178,27 @@ const LevelEdit = () => {
 
         httpInstance
             .put(`/Level/Edit/${id}`, {
-                title: title,
-                active: active,
+                title,
+                active,
+                order,
+                reorderQuests,
                 questions: itemQuest
             })
-            .then((response) => {
-                console.log(response)
+            .then(() => {
+                toast.success('Level edited successfully', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: true,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "colored",
+                    transition: Bounce,
+                });
+                setAlter(false)
+            }).catch(() => {
+
             })
     }
 
@@ -230,6 +236,8 @@ const LevelEdit = () => {
             setItemQuest(updatedItems);
             console.log('Lista reordenada:', updatedItems); // Console.log da lista reordenada
             setDraggedItemIndex(null);
+            setReorderQuests(true)
+            setAlter(true)
         }
         setDragOverIndex(null);
     };
@@ -293,19 +301,34 @@ const LevelEdit = () => {
                     {/* <!-- Input Fields --> */}
                     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
                         <div className="flex flex-col gap-5.5 p-6.5">
-                            <div>
-                                <label className="mb-3 block text-black dark:text-white" htmlFor='title'>
-                                    Title
-                                </label>
-                                <input
-                                    type="text"
-                                    id='title'
-                                    placeholder="Default Input"
-                                    className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                                    value={title}
-                                    onChange={(t) => {setTitle(t.target.value);setAlter(true)}}
-                                />
+                            <div className='grid grid-cols-2 gap-12'>
+                                <div>
+                                    <label className="mb-3 block text-black dark:text-white" htmlFor='title'>
+                                        Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id='title'
+                                        placeholder="Default Input"
+                                        className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
+                                        value={title}
+                                        onChange={(t) => { setTitle(t.target.value); setAlter(true) }}
+                                    />
 
+                                </div>
+                                <div>
+                                    <label className="mb-3 block text-black dark:text-white" htmlFor='title'>
+                                        Order
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id='order'
+                                        placeholder="Default Input"
+                                        className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
+                                        value={order}
+                                        onChange={(t) => { setOrder(Number.parseInt(t.target.value)); setAlter(true) }}
+                                    />
+                                </div>
                             </div>
 
 
@@ -444,7 +467,7 @@ const LevelEdit = () => {
                         Type
                     </label>
 
-                    <div className="relative z-20 bg-white dark:bg-form-input">
+                    <div className="relative z-20 bg-white dark:bg-form-input dark:text-white">
                         <span className="absolute top-1/2 left-4 z-30 -translate-y-1/2">
                             <FontAwesomeIcon icon={faBox} />
                         </span>
@@ -471,8 +494,8 @@ const LevelEdit = () => {
                             </option>
                         </select>
 
-                        <span className="absolute top-1/2 right-4 z-10 -translate-y-1/2">
-                            <FontAwesomeIcon icon={faChevronDown} />
+                        <span className="absolute top-1/2 right-4 z-10 -translate-y-1/2 dark:text-white">
+                            <FontAwesomeIcon icon={faChevronDown} className='dark:text-white' />
                         </span>
                     </div>
 

@@ -73,7 +73,7 @@ const Level = () => {
 
 										<td className="border-b border-[#eee] py-5 px-4 dark:border-strokedark">
 											<div className="flex items-center space-x-3.5">
-												<button type='button' className="hover:text-primary" onClick={() => navigate(`/Level/Edit/${item.id}`)}>
+												<button type='button' className="hover:text-primary" onClick={() => navigate(`/admin/Level/Edit/${item.id}`)}>
 													<FontAwesomeIcon icon={faEye} />
 												</button>
 												<button type='button' className="hover:text-primary">

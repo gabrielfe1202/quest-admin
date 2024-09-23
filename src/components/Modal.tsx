@@ -13,7 +13,7 @@ const Modal = ({ isOpen, onClose, children }: any) => {
                 >
                     {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
                     <div
-                        className="bg-white rounded-lg  pt-3 p-6 shadow-lg transform transition-transform duration-300 max-w-2xl w-full mx-auto"
+                        className="bg-white dark:border-strokedark dark:bg-boxdark rounded-lg  pt-3 p-6 shadow-lg transform transition-transform duration-300 max-w-2xl w-full mx-auto"
                         onClick={(e) => e.stopPropagation()} // Evita fechar ao clicar dentro do modal
                         style={{ transform: isOpen ? 'scale(1)' : 'scale(0.95)' }}
                     >
