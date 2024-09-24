@@ -1,181 +1,95 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import Loader from './common/Loader';
 import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
-import SignUp from './pages/Authentication/SignUp';
-import Calendar from './pages/Calendar';
-import Chart from './pages/Chart';
 import ECommerce from './pages/Dashboard/ECommerce';
-import FormElements from './pages/Form/FormElements';
-import FormLayout from './pages/Form/FormLayout';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import Tables from './pages/Tables';
-import Alerts from './pages/UiElements/Alerts';
-import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Level from './pages/Level/Index';
 import LevelEdit from './pages/Level/LevelEdit';
 import LevelPublish from './pages/Level/LevelPublish';
 
+type RequiredAuthenticationProps = {
+  isAllowed: boolean;
+  children: React.ReactNode
+}
+
+function RequiredAuthentication({ isAllowed = false, children }: RequiredAuthenticationProps) {
+  if (!isAllowed) return <Navigate to="/admin/auth/signin" replace />;
+
+  return children;
+}
+
+function checkUserAuthentication(): boolean {
+  const adminUserId = localStorage.getItem("adminUserId")
+
+  return adminUserId !== null;
+}
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const { pathname } = useLocation();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(( ) => {
+  useEffect(() => {
     window.scrollTo(0, 0);
 
     setTimeout(() => setLoading(false), 1000);
-  },[pathname]);
+  }, [pathname]);
 
   return loading ? (
     <Loader />
   ) : (
+  <>
     <Routes>
-      <Route
-        path='/admin'
-        element={
-          <DefaultLayout>
-            <PageTitle title="eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <ECommerce />
-          </DefaultLayout>
-        }
+      <Route 
+       path='/admin/auth/signin'
+       element={<SignIn />}
       />
-      <Route
-        path="/admin/calendar"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Calendar | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Calendar />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/profile"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Profile | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Profile />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/forms/form-elements"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Form Elements | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <FormElements />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/forms/form-layout"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <FormLayout />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/tables"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Tables | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Tables />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/settings"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Settings | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Settings />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/chart"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Basic Chart | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Chart />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/ui/alerts"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Alerts | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Alerts />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/ui/buttons"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Buttons | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <Buttons />
-          </DefaultLayout>
-        }
-      />
-      <Route
-        path="/admin/auth/signin"
-        element={
-          <>
-            <PageTitle title="Signin | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <SignIn />
-          </>
-        }
-      />
-      <Route
-        path="/admin/auth/signup"
-        element={
-          <>
-            <PageTitle title="Signup | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-            <SignUp />
-          </>
-        }
-      />
-
-      <Route
-        path="/admin/Level"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Level" />
-            <Level />
-          </DefaultLayout>
-        }
-      />
-
-
-      <Route
-        path="/admin/Level/edit/:id"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Edit level" />
-            <LevelEdit />
-          </DefaultLayout>
-        }
-      />
-
-      <Route
-        path="/admin/Level/Publish/:id"
-        element={
-          <DefaultLayout>
-            <PageTitle title="Publish level" />
-            <LevelPublish />            
-          </DefaultLayout>
-        }
-      />
-
     </Routes>
+    <RequiredAuthentication isAllowed={checkUserAuthentication()}>
+      <DefaultLayout>
+        <Routes>
+          <Route
+            path='/admin'
+            element={
+              <>
+                <PageTitle title="eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <ECommerce />
+              </>
+            }
+          />
+          <Route
+            path="/admin/Level"
+            element={
+              <>
+                <PageTitle title="Level" />
+                <Level />
+              </>
+            }
+          />
+          <Route
+            path="/admin/Level/edit/:id"
+            element={
+              <>
+                <PageTitle title="Edit level" />
+                <LevelEdit />
+              </>
+            }
+          />
+          <Route
+            path="/admin/Level/Publish/:id"
+            element={
+              <>
+                <PageTitle title="Publish level" />
+                <LevelPublish />
+              </>
+            }
+          />
+        </Routes>
+      </DefaultLayout>
+    </RequiredAuthentication>
+    </>
   );
 }
 

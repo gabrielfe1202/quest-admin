@@ -23,8 +23,10 @@ const LevelEdit = () => {
     const [questions] = useState<Question[]>([])
     const [contents] = useState<Content[]>([])
     const [itemQuest, setItemQuest] = useState<nextItem[]>([])
-    const [currentEditQuest, setCurrentEditQuest] = useState<Question>()
     const [questEditTitle, setQuesEditTitle] = useState<string>('')
+    const [currentEditQuest, setCurrentEditQuest] = useState<Question>()
+    const [currentEditoptions, setCurrentEditoptions] = useState<Option[]>([])
+    const [currentTitleptions, setCurrentTitleptions] = useState<string>()
     const [questEditType, setQuesEditType] = useState<string>('')
     const [currentOptionIndex, setCurrentOptionIndex] = useState<number | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,7 +95,6 @@ const LevelEdit = () => {
             });
 
     }, [id])
-
 
     const sendEdit = () => {
         for (let i = 0; i < itemQuest.length; i++) {
@@ -248,7 +249,7 @@ const LevelEdit = () => {
             const updatedItems = [...currentEditQuest.options];
             const [draggedItem] = updatedItems.splice(draggedItemIndex, 1);
             updatedItems.splice(index, 0, draggedItem);
-            currentEditQuest.options = updatedItems
+            setCurrentEditoptions(updatedItems)
             console.log('Lista reordenada:', updatedItems); // Console.log da lista reordenada
             setDraggedItemIndex(null);
         }
@@ -272,8 +273,49 @@ const LevelEdit = () => {
         setCurrentEditQuest(quest)
         setQuesEditTitle(quest.title)
         setQuesEditType(quest.type)
+        setCurrentEditoptions(quest.options)
         openModal()
     }
+
+    function sendQuest() {
+        if (currentEditQuest?.id === "") {
+            const newQuest = new ItemQuest(questions, contents)
+            const last = newQuest.getLastItem()
+            httpInstance.post('/Question', {
+                title: questEditTitle,
+                type: questEditType,
+                levelId: id,
+                prevItemId: last.type == 'content' ? last.content.id : last.quest.id,
+                prevItemType: newQuest.getLastItem().type,
+                options: currentEditoptions                
+            }).then((response) => {
+                console.log(response)
+            }).catch(() => { })
+        }
+    }
+
+    function addQuestOption() {
+        setCurrentEditoptions((prev) => [...prev,new Option({id: '0',points: 0,title: 'change me'})])  
+    }
+
+    function editOpton(key: number) {
+        setCurrentOptionIndex(key)
+        setCurrentTitleptions(currentEditoptions[key].title)        
+    }
+
+    function changeOption() {
+        if(currentOptionIndex !== null){
+            const op = currentEditoptions[currentOptionIndex]            
+            httpInstance.post('/Option', {
+                id: op.id,
+                title: currentTitleptions,
+                questionId: currentEditQuest?.id
+            }).then((response) => {
+                console.log(response)
+            })
+        }
+    }
+
 
     return (
         <>
@@ -334,10 +376,30 @@ const LevelEdit = () => {
 
                             <div className="flex flex-col gap-9">
                                 <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                                    <div className="py-6 px-4 md:px-6 xl:px-7.5">
+                                    <div className="flex flex-row justify-between py-6 px-4 md:px-6 xl:px-7.5">
                                         <h4 className="text-xl font-semibold text-black dark:text-white">
                                             Questions & contents
                                         </h4>
+
+                                        <div className='flex flex-row gap-4'>
+                                            <button
+                                                type='button'
+                                                className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
+                                                onClick={() => { openModal(); setCurrentEditQuest(new Question("")) }}
+                                            >
+                                                Add quest
+                                            </button>
+
+
+                                            <button
+                                                type='button'
+                                                className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
+                                                onClick={() => { }}
+                                            >
+                                                Add content
+                                            </button>
+
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
@@ -447,7 +509,7 @@ const LevelEdit = () => {
                                 <button
                                     type='button'
                                     className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75'
-                                    onClick={() => navigate(`/Level/Publish/${id}`)}
+                                    onClick={() => navigate(`/admin/Level/Publish/${id}`)}
                                     disabled={alter}
                                 >
                                     Publish
@@ -517,10 +579,21 @@ const LevelEdit = () => {
 
                     <div className="flex flex-col gap-4 mt-8 justify-end items-end">
                         <div className="rounded-sm w-full border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                            <div className="py-2 px-4 md:px-4 xl:px-5">
+                            <div className="flex flex-row justify-between py-2 px-4 md:px-4 xl:px-5">
                                 <h4 className="text-lg font-semibold text-black dark:text-white">
                                     Options
                                 </h4>
+
+                                <div>
+                                    <button
+                                        type='button'
+                                        className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
+                                        onClick={() => addQuestOption()}
+                                    >
+                                        Add option
+                                    </button> 
+
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
@@ -538,7 +611,10 @@ const LevelEdit = () => {
                                 </div>
                             </div>
 
-                            {currentEditQuest?.options.map((item, key) => {
+                            {currentEditoptions.map((item, key) => {
+                                
+                                
+
                                 return (
                                     <>
                                         <div
@@ -574,7 +650,7 @@ const LevelEdit = () => {
                                             </div>
                                             <div className="col-span-1 flex items-center">
                                                 <div className="flex items-center space-x-3.5">
-                                                    <button type='button' className="hover:text-primary" onClick={() => { setCurrentOptionIndex(key) }}>
+                                                    <button type='button' className="hover:text-primary" onClick={() => { editOpton(key) }}>
                                                         <FontAwesomeIcon icon={faEdit} />
                                                     </button>
                                                     <button type='button' className="hover:text-primary">
@@ -604,7 +680,8 @@ const LevelEdit = () => {
                                                             type="text"
                                                             placeholder="Default Input"
                                                             className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                                                            value={item.title}
+                                                            value={currentTitleptions}
+                                                            onChange={(e) => setCurrentTitleptions(e.target.value)}
                                                         />
                                                     </div>
                                                     <div className=''>
@@ -623,7 +700,7 @@ const LevelEdit = () => {
                                                 <button
                                                     type='button'
                                                     className='w-24 mt-5 inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
-                                                    onClick={() => { }}
+                                                    onClick={() => { changeOption() }}
                                                 >
                                                     Save
                                                 </button>
@@ -637,7 +714,7 @@ const LevelEdit = () => {
                         <button
                             type='button'
                             className='w-32 mt-1 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
-                            onClick={() => { }}
+                            onClick={() => { sendQuest() }}
                         >
                             Save
                         </button>

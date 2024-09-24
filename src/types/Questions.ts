@@ -6,7 +6,7 @@ export class Option {
     public points: number;
     public questionId: string;
 
-    constructor(item: any){
+    constructor(item: any) {
         this.id = item.id
         this.title = item.title
         this.order = item.order;
@@ -17,21 +17,29 @@ export class Option {
 }
 
 export class Question {
-    public title!: string;
-    public type!: string;
-    public nextQuestionId!: string | null;
-    public nextContetId!: string | null;
-    public previusQuestionId!: string | null;
-    public previusContetId!: string | null;
-    public options!: Option[]
+    public title: string;
+    public type: string;
+    public nextQuestionId: string | null;
+    public nextContetId: string | null;
+    public previusQuestionId: string | null;
+    public previusContetId: string | null;
+    public options: Option[]
 
-    constructor(public id: string) { }
+    constructor(public id: string) {
+        this.title = ""
+        this.type = ""
+        this.nextContetId = ""
+        this.nextQuestionId = ""
+        this.previusContetId = ""
+        this.previusQuestionId = ""
+        this.options = []
+    }
 
-    setTitle(title: string){
+    setTitle(title: string) {
         this.title = title
     }
 
-    setType(type: string){
+    setType(type: string) {
         this.type = type
     }
 
@@ -158,9 +166,9 @@ export class ItemQuest {
     }
 
     getFirstItem(): nextItem {
-        const firstQuestion = this.listQuestion.find(x => x.previusQuestionId == null);
-        const firstContent = this.listContent.find(x => x.previusContetId == null);
-        
+        const firstQuestion = this.listQuestion.find(x => x.previusQuestionId == null && x.previusContetId == null);
+        const firstContent = this.listContent.find(x => x.previusContetId == null && x.previusQuestionId == null);
+
         if (firstQuestion) {
             return {
                 type: 'question',
@@ -175,16 +183,35 @@ export class ItemQuest {
         throw new Error('No starting item found');
     }
 
+    getLastItem(): nextItem {
+        const lastQuestion = this.listQuestion.find(x => x.nextQuestionId == null && x.nextContetId == null);
+        const lastContent = this.listContent.find(x => x.nextContetId == null && x.nextQuestionId == null);
+
+        if (lastQuestion) {
+            return {
+                type: 'question',
+                quest: lastQuestion
+            };
+        } else if (lastContent) {
+            return {
+                type: 'content',
+                content: lastContent
+            };
+        }
+        throw new Error('No starting item found');
+    }
+
+
     getLinkedList(): nextItem[] {
         const result: nextItem[] = [];
         let currentItem: nextItem | undefined = this.getFirstItem();
-        
+
         while (currentItem) {
             result.push(currentItem);
-            if (currentItem.type === 'question') {       
-                currentItem = currentItem.quest.getNextItem(this.listQuestion, this.listContent)                
+            if (currentItem.type === 'question') {
+                currentItem = currentItem.quest.getNextItem(this.listQuestion, this.listContent)
             } else {
-                currentItem = currentItem.content.getNextItem(this.listQuestion, this.listContent)                
+                currentItem = currentItem.content.getNextItem(this.listQuestion, this.listContent)
             }
         }
 

@@ -17,7 +17,7 @@ const SignIn = () => {
       })
       .then((response) => {
         console.log(response.data);
-        localStorage.setItem("userId", response.data[0].id);
+        localStorage.setItem("adminUserId", response.data[0].id);
         navigate("/admin/");
       })
       .catch((error) => {
@@ -29,7 +29,7 @@ const SignIn = () => {
 
   return (
     <div className='flex justify-center items-center' style={{ minHeight: '100vh' }}>
-      <div className="container justify-center w-full items-center rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+      <div className="container justify-center w-9/12 items-center rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="flex flex-wrap items-center">
           <div className="hidden w-full xl:block xl:w-1/2">
             <div className="py-17.5 px-26 text-center">
