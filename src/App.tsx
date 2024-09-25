@@ -51,7 +51,7 @@ function App() {
       <DefaultLayout>
         <Routes>
           <Route
-            path='/admin'
+            index
             element={
               <>
                 <PageTitle title="eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template" />
