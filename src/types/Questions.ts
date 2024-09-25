@@ -6,6 +6,7 @@ export class Option {
     public points: number;
     public questionId: string;
 
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     constructor(item: any) {
         this.id = item.id
         this.title = item.title
@@ -174,6 +175,7 @@ export class ItemQuest {
                 type: 'question',
                 quest: firstQuestion
             };
+        // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (firstContent) {
             return {
                 type: 'content',
@@ -192,6 +194,7 @@ export class ItemQuest {
                 type: 'question',
                 quest: lastQuestion
             };
+        // biome-ignore lint/style/noUselessElse: <explanation>
         } else if (lastContent) {
             return {
                 type: 'content',
