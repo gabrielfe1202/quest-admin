@@ -39,60 +39,67 @@ const LevelEdit = () => {
         setIsOptionSelected(true);
     };
 
+
+    async function loadDataLevel(){
+    
+        httpInstance
+        .get(`/Level/infos/${id}`)
+        .then(async (response) => {
+            console.log(response.data)
+            setTitle(response.data.level.title)
+            setActive(response.data.level.active)
+            setOrder(response.data.level.order)
+            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            await response.data.questions.map((item: any) => {
+                if (questions.filter(x => x.id === item.id).length === 0) {
+                    const quest = new Question(item.id)
+                    const opts: Option[] = []
+                    quest.title = item.title
+                    quest.type = item.type
+                    quest.nextContetId = item.nextContetId
+                    quest.nextQuestionId = item.nextQuestionId
+                    quest.previusContetId = item.previusContetId
+                    quest.previusQuestionId = item.previusQuestionId
+
+                    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                    item.options.map((opt: any) => {
+                        opts.push(new Option(opt))
+                    })
+
+                    quest.options = opts
+
+                    questions.push(quest)
+                }
+            })
+            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            await response.data.contents.map((item: any) => {
+                if (contents.filter(x => x.id === item.id).length === 0) {
+                    const cont = new Content(item.id)
+                    cont.title = item.title
+                    cont.text = item.text
+                    cont.nextContetId = item.nextContetId
+                    cont.nextQuestionId = item.nextQuestionId
+                    cont.previusContetId = item.previusContetId
+                    cont.previusQuestionId = item.previusQuestionId
+                    contents.push(cont)
+                }
+            })
+            if (questions.length > 0 && contents.length > 0) {
+                const newQuest = new ItemQuest(questions, contents)
+                console.log(newQuest.getLinkedList())
+                setItemQuest(newQuest.getLinkedList())
+            }
+        })
+        .catch((error) => {
+            console.error("Erro ao buscar dados:", error);
+        });    
+
+    }
+
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
 
-        httpInstance
-            .get(`/Level/infos/${id}`)
-            .then((response) => {
-                console.log(response.data)
-                setTitle(response.data.level.title)
-                setActive(response.data.level.active)
-                setOrder(response.data.level.order)
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-                response.data.questions.map((item: any) => {
-                    if (questions.filter(x => x.id === item.id).length === 0) {
-                        const quest = new Question(item.id)
-                        const opts: Option[] = []
-                        quest.title = item.title
-                        quest.type = item.type
-                        quest.nextContetId = item.nextContetId
-                        quest.nextQuestionId = item.nextQuestionId
-                        quest.previusContetId = item.previusContetId
-                        quest.previusQuestionId = item.previusQuestionId
-
-                        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-                        item.options.map((opt: any) => {
-                            opts.push(new Option(opt))
-                        })
-
-                        quest.options = opts
-
-                        questions.push(quest)
-                    }
-                })
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-                response.data.contents.map((item: any) => {
-                    if (contents.filter(x => x.id === item.id).length === 0) {
-                        const cont = new Content(item.id)
-                        cont.title = item.title
-                        cont.text = item.text
-                        cont.nextContetId = item.nextContetId
-                        cont.nextQuestionId = item.nextQuestionId
-                        cont.previusContetId = item.previusContetId
-                        cont.previusQuestionId = item.previusQuestionId
-                        contents.push(cont)
-                    }
-                })
-                if (questions.length > 0 && contents.length > 0) {
-                    const newQuest = new ItemQuest(questions, contents)
-                    console.log(newQuest.getLinkedList())
-                    setItemQuest(newQuest.getLinkedList())
-                }
-            })
-            .catch((error) => {
-                console.error("Erro ao buscar dados:", error);
-            });
+        loadDataLevel()
 
     }, [id])
 
@@ -279,39 +286,71 @@ const LevelEdit = () => {
 
     function sendQuest() {
         if (currentEditQuest?.id === "") {
-            const newQuest = new ItemQuest(questions, contents)
-            const last = newQuest.getLastItem()
             httpInstance.post('/Question', {
                 title: questEditTitle,
                 type: questEditType,
                 levelId: id,
-                prevItemId: last.type == 'content' ? last.content.id : last.quest.id,
-                prevItemType: newQuest.getLastItem().type,
-                options: currentEditoptions                
-            }).then((response) => {
-                console.log(response)
+                options: currentEditoptions
+            }).then((response) => {                
+                console.log(response.data)
+                const quest: Question = new Question(response.data.question[0].id)                
+                quest.title = response.data.question[0]?.title
+                quest.type = response.data.question[0]?.type
+                quest.nextContetId = response.data.question[0]?.nextContetId                
+                quest.nextQuestionId = response.data.question[0]?.nextQuestionId                
+                quest.previusContetId = response.data.question[0]?.previusContetId                
+                quest.previusQuestionId = response.data.question[0]?.previusQuestionId                
+                const newItem: nextItem = { type: 'question', quest: quest }
+                setItemQuest(() => [...itemQuest,newItem])
+                console.log('cc')
+                closeModal()
+            }).catch(() => { })
+        }else{
+            httpInstance.put('/Question', {
+                id: currentEditQuest?.id,
+                title: questEditTitle,
+                type: questEditType,
+                levelId: id,
+                options: currentEditoptions
+            }).then((response) => {                
+                console.log(response)                
+                loadDataLevel()
+                closeModal()
             }).catch(() => { })
         }
     }
 
+    function deleteQuest(id: string){
+        httpInstance.delete(`/Question/${id}`).then((response) => {
+            setItemQuest(() => itemQuest.filter(x => x.type === 'question' ? x.quest.id !== id : true ))
+        }).catch((error)  => {
+            console.log(error)
+        })
+    }
+
     function addQuestOption() {
-        setCurrentEditoptions((prev) => [...prev,new Option({id: '0',points: 0,title: 'change me'})])  
+        setCurrentEditoptions((prev) => [...prev, new Option({ id: '0', points: 0, title: 'change me' })])
     }
 
     function editOpton(key: number) {
         setCurrentOptionIndex(key)
-        setCurrentTitleptions(currentEditoptions[key].title)        
+        setCurrentTitleptions(currentEditoptions[key].title)
     }
 
     function changeOption() {
-        if(currentOptionIndex !== null){
-            const op = currentEditoptions[currentOptionIndex]            
+        if (currentOptionIndex !== null) {
+            const op = currentEditoptions[currentOptionIndex]
             httpInstance.post('/Option', {
                 id: op.id,
                 title: currentTitleptions,
                 questionId: currentEditQuest?.id
             }).then((response) => {
                 console.log(response)
+                httpInstance.get(`/Options/${currentEditQuest?.id}`).then((data) => {
+                    console.log(data.data.options)
+                    setCurrentEditoptions(data.data.options)
+                    setCurrentOptionIndex(null)
+                })
             })
         }
     }
@@ -385,7 +424,7 @@ const LevelEdit = () => {
                                             <button
                                                 type='button'
                                                 className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
-                                                onClick={() => { openModal(); setCurrentEditQuest(new Question("")) }}
+                                                onClick={() => { openModal(); setCurrentEditQuest(new Question("")); setCurrentEditoptions([]); setQuesEditTitle(''); setQuesEditType('') }}
                                             >
                                                 Add quest
                                             </button>
@@ -452,7 +491,7 @@ const LevelEdit = () => {
                                                             <button type='button' className="hover:text-primary" onClick={() => { editQuest(item.quest) }}>
                                                                 <FontAwesomeIcon icon={faEdit} />
                                                             </button>
-                                                            <button type='button' className="hover:text-primary">
+                                                            <button type='button' className="hover:text-primary" onClick={() => deleteQuest(item.quest.id)}>
                                                                 <FontAwesomeIcon icon={faTrash} />
                                                             </button>
                                                         </div>
@@ -524,7 +563,7 @@ const LevelEdit = () => {
 
             <Modal isOpen={isModalOpen} onClose={closeModal}>
                 <h2 className="text-xl font-bold mb-4">Edit question</h2>
-                <div>
+                <div className=''>
                     <label className="mb-1 block text-black dark:text-white" htmlFor=''>
                         Type
                     </label>
@@ -576,150 +615,149 @@ const LevelEdit = () => {
                         />
                     </div>
 
+                    {currentEditQuest !== undefined && currentEditQuest?.id.length > 5 && (
+                        <div className="flex flex-col gap-4 mt-8 justify-end items-end">
+                            <div className="rounded-sm w-full border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                                <div className="flex flex-row justify-between py-2 px-4 md:px-4 xl:px-5">
+                                    <h4 className="text-lg font-semibold text-black dark:text-white">
+                                        Options
+                                    </h4>
 
-                    <div className="flex flex-col gap-4 mt-8 justify-end items-end">
-                        <div className="rounded-sm w-full border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-                            <div className="flex flex-row justify-between py-2 px-4 md:px-4 xl:px-5">
-                                <h4 className="text-lg font-semibold text-black dark:text-white">
-                                    Options
-                                </h4>
-
-                                <div>
-                                    <button
-                                        type='button'
-                                        className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
-                                        onClick={() => addQuestOption()}
-                                    >
-                                        Add option
-                                    </button> 
-
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
-                                <div className="col-span-3 flex items-center">
-                                    <p className="font-medium">Title</p>
-                                </div>
-                                <div className="col-span-2 hidden items-center sm:flex">
-                                    <p className="font-medium">Correct</p>
-                                </div>
-                                <div className="col-span-1 flex items-center">
-                                    <p className="font-medium">Points</p>
-                                </div>
-                                <div className="col-span-1 flex items-center">
-                                    <p className="font-medium">Actions</p>
-                                </div>
-                            </div>
-
-                            {currentEditoptions.map((item, key) => {
-                                
-                                
-
-                                return (
-                                    <>
-                                        <div
-                                            className={`grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5 ${isDragging ? 'opacity-50' : 'opacity-100'
-                                                } ${dragOverIndex !== null ? 'border-dashed border-4 border-blue-500' : ''}`}
-                                            key={key.toString()}
-                                            draggable
-                                            onDragStart={() => onDragStart(key)}
-                                            onDragEnd={onDragEnd}
-                                            onDragOver={(e) => onDragOver(e, key)}
-                                            onDrop={() => handleDropOption(key)}
+                                    <div>
+                                        <button
+                                            type='button'
+                                            className='inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75 text-md'
+                                            onClick={() => addQuestOption()}
                                         >
-                                            <div className="col-span-3 flex items-center">
-                                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                                    <p className="text-sm text-black dark:text-white">
-                                                        {item.title}
+                                            Add option
+                                        </button>
+
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
+                                    <div className="col-span-3 flex items-center">
+                                        <p className="font-medium">Title</p>
+                                    </div>
+                                    <div className="col-span-2 hidden items-center sm:flex">
+                                        <p className="font-medium">Correct</p>
+                                    </div>
+                                    <div className="col-span-1 flex items-center">
+                                        <p className="font-medium">Points</p>
+                                    </div>
+                                    <div className="col-span-1 flex items-center">
+                                        <p className="font-medium">Actions</p>
+                                    </div>
+                                </div>
+
+                                {currentEditoptions.map((item, key) => {
+
+                                    return (
+                                        <>
+                                            <div
+                                                className={`grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5 ${isDragging ? 'opacity-50' : 'opacity-100'
+                                                    } ${dragOverIndex !== null ? 'border-dashed border-4 border-blue-500' : ''}`}
+                                                key={key.toString()}
+                                                draggable
+                                                onDragStart={() => onDragStart(key)}
+                                                onDragEnd={onDragEnd}
+                                                onDragOver={(e) => onDragOver(e, key)}
+                                                onDrop={() => handleDropOption(key)}
+                                            >
+                                                <div className="col-span-3 flex items-center">
+                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                                        <p className="text-sm text-black dark:text-white">
+                                                            {item.title}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-2 hidden items-center sm:flex">
+                                                    <p
+                                                        className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${item.correct
+                                                            ? 'bg-success text-success'
+                                                            : 'bg-danger text-danger'}`}
+                                                    >
+                                                        {item.correct ? "True" : "False"}
                                                     </p>
                                                 </div>
-                                            </div>
-                                            <div className="col-span-2 hidden items-center sm:flex">
-                                                <p
-                                                    className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${item.correct
-                                                        ? 'bg-success text-success'
-                                                        : 'bg-danger text-danger'}`}
-                                                >
-                                                    {item.correct ? "True" : "False"}
-                                                </p>
-                                            </div>
-                                            <div className="col-span-1 flex items-center">
-                                                <p className="text-sm text-black dark:text-white">
-                                                    {item.points}
-                                                </p>
-                                            </div>
-                                            <div className="col-span-1 flex items-center">
-                                                <div className="flex items-center space-x-3.5">
-                                                    <button type='button' className="hover:text-primary" onClick={() => { editOpton(key) }}>
-                                                        <FontAwesomeIcon icon={faEdit} />
-                                                    </button>
-                                                    <button type='button' className="hover:text-primary">
-                                                        <FontAwesomeIcon icon={faTrash} />
-                                                    </button>
+                                                <div className="col-span-1 flex items-center">
+                                                    <p className="text-sm text-black dark:text-white">
+                                                        {item.points}
+                                                    </p>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        {currentOptionIndex === key && (
-                                            <div className='p-6 border-solid border-t-[1.5px] border-stroke relative'>
-
-                                                <button
-                                                    type='button'
-                                                    className="absolute top-3 right-5 text-gray-600 font-bold hover:text-gray-800"
-                                                    onClick={() => { setCurrentOptionIndex(null) }}
-                                                >
-                                                    &#10005;
-                                                </button>
-
-                                                <div className='grid grid-cols-2 gap-4'>
-                                                    <div className=''>
-                                                        <label className="mb-1 block text-black dark:text-white" htmlFor=''>
-                                                            Label
-                                                        </label>
-
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Default Input"
-                                                            className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                                                            value={currentTitleptions}
-                                                            onChange={(e) => setCurrentTitleptions(e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div className=''>
-                                                        <label className="mb-1 block text-black dark:text-white" htmlFor=''>
-                                                            Poits
-                                                        </label>
-
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Default Input"
-                                                            className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                                                            value={item.points}
-                                                        />
+                                                <div className="col-span-1 flex items-center">
+                                                    <div className="flex items-center space-x-3.5">
+                                                        <button type='button' className="hover:text-primary" onClick={() => { editOpton(key) }}>
+                                                            <FontAwesomeIcon icon={faEdit} />
+                                                        </button>
+                                                        <button type='button' className="hover:text-primary">
+                                                            <FontAwesomeIcon icon={faTrash} />
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    type='button'
-                                                    className='w-24 mt-5 inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
-                                                    onClick={() => { changeOption() }}
-                                                >
-                                                    Save
-                                                </button>
                                             </div>
-                                        )}
-                                    </>
-                                )
-                            })}
+                                            {currentOptionIndex === key && (
+                                                <div className='p-6 border-solid border-t-[1.5px] border-stroke relative'>
+
+                                                    <button
+                                                        type='button'
+                                                        className="absolute top-3 right-5 text-gray-600 font-bold hover:text-gray-800"
+                                                        onClick={() => { setCurrentOptionIndex(null) }}
+                                                    >
+                                                        &#10005;
+                                                    </button>
+
+                                                    <div className='grid grid-cols-2 gap-4'>
+                                                        <div className=''>
+                                                            <label className="mb-1 block text-black dark:text-white" htmlFor=''>
+                                                                Label
+                                                            </label>
+
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Default Input"
+                                                                className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
+                                                                value={currentTitleptions}
+                                                                onChange={(e) => setCurrentTitleptions(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className=''>
+                                                            <label className="mb-1 block text-black dark:text-white" htmlFor=''>
+                                                                Poits
+                                                            </label>
+
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Default Input"
+                                                                className="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
+                                                                value={item.points}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type='button'
+                                                        className='w-24 mt-5 inline-flex items-center text-lg justify-center rounded-full bg-primary py-1 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
+                                                        onClick={() => { changeOption() }}
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )
+                                })}
+
+                            </div>
 
                         </div>
-                        <button
-                            type='button'
-                            className='w-32 mt-1 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
-                            onClick={() => { sendQuest() }}
-                        >
-                            Save
-                        </button>
-                    </div>
-
+                    )}
+                    <button
+                        type='button'
+                        className='w-32 float-end mt-2 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-12 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10'
+                        onClick={() => { sendQuest() }}
+                    >
+                        Save
+                    </button>
                 </div>
             </Modal>
 
