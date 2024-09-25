@@ -18,7 +18,7 @@ const SignIn = () => {
       .then((response) => {
         console.log(response.data);
         localStorage.setItem("adminUserId", response.data[0].id);
-        navigate("/admin/");
+        navigate("/");
       })
       .catch((error) => {
         console.error("Erro ao buscar dados:", error);

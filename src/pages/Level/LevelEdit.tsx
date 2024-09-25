@@ -548,7 +548,7 @@ const LevelEdit = () => {
                                 <button
                                     type='button'
                                     className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75'
-                                    onClick={() => navigate(`/admin/Level/Publish/${id}`)}
+                                    onClick={() => navigate(`/Level/Publish/${id}`)}
                                     disabled={alter}
                                 >
                                     Publish

@@ -257,7 +257,7 @@ const LevelPublish = () => {
                                 <button
                                     type='button'
                                     className='w-40 inline-flex items-center text-lg justify-center rounded-full bg-primary py-3 px-10 text-center font-medium text-white hover:bg-opacity-90 lg:px-8 xl:px-10 disabled:opacity-75'
-                                    onClick={() => navigate(`/admin/Level/Edit/${id}`)}                                    
+                                    onClick={() => navigate(`/Level/Edit/${id}`)}                                    
                                 >
                                     Back
                                 </button>

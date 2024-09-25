@@ -15,7 +15,7 @@ type RequiredAuthenticationProps = {
 }
 
 function RequiredAuthentication({ isAllowed = false, children }: RequiredAuthenticationProps) {
-  if (!isAllowed) return <Navigate to="/admin/auth/signin" replace />;
+  if (!isAllowed) return <Navigate to="/auth/signin" replace />;
 
   return children;
 }
@@ -43,7 +43,7 @@ function App() {
   <>
     <Routes>
       <Route 
-       path='/admin/auth/signin'
+       path='/auth/signin'
        element={<SignIn />}
       />
     </Routes>
@@ -60,7 +60,7 @@ function App() {
             }
           />
           <Route
-            path="/admin/Level"
+            path="/Level"
             element={
               <>
                 <PageTitle title="Level" />
@@ -69,7 +69,7 @@ function App() {
             }
           />
           <Route
-            path="/admin/Level/edit/:id"
+            path="/Level/edit/:id"
             element={
               <>
                 <PageTitle title="Edit level" />
@@ -78,7 +78,7 @@ function App() {
             }
           />
           <Route
-            path="/admin/Level/Publish/:id"
+            path="/Level/Publish/:id"
             element={
               <>
                 <PageTitle title="Publish level" />
