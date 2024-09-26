@@ -9,18 +9,23 @@ import { useNavigate } from 'react-router-dom';
 const Level = () => {
 	const [levels, setLevels] = useState([])
 	const [showError, setShowError] = useState<boolean>(false)
+	const [loading, setloading] = useState<boolean>(false)
 	const navigate = useNavigate();
 
 	async function loadData() {
+		setloading(true)
 		httpInstance
 			.get('/LevelList')
 			.then((response) => {
+				setShowError(false)
 				console.log(response.data)
 				setLevels(response.data);
 			})
 			.catch((error) => {
 				console.error("Erro ao buscar dados:", error);
 				setShowError(true)
+			}).finally(() => {
+				setloading(false)
 			});
 	}
 
@@ -93,7 +98,7 @@ const Level = () => {
 								))}
 							</tbody>
 						</table>
-						{levels.length === 0 && (
+						{loading && (
 							<div className='flex justify-center items-center'>
 								<div className='w-2/12'>
 									<DotLottieReact
