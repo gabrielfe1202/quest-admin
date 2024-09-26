@@ -1,23 +1,31 @@
 import { useEffect, useState } from 'react';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { httpInstance } from '../../services/HttpRequest';
 import { useNavigate } from 'react-router-dom';
 
 const Level = () => {
 	const [levels, setLevels] = useState([])
+	const [showError, setShowError] = useState<boolean>(false)
 	const navigate = useNavigate();
 
-	useEffect(() => {
+	async function loadData() {
 		httpInstance
 			.get('/LevelList')
 			.then((response) => {
+				console.log(response.data)
 				setLevels(response.data);
 			})
 			.catch((error) => {
 				console.error("Erro ao buscar dados:", error);
+				setShowError(true)
 			});
+	}
+
+	useEffect(() => {
+		loadData()
 	}, []);
 
 	return (
@@ -35,7 +43,7 @@ const Level = () => {
 									</th>
 									<th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
 										Status
-									</th>									
+									</th>
 									<th className="min-w-[120px] py-4 px-4 font-medium text-black dark:text-white">
 										Order
 									</th>
@@ -47,7 +55,7 @@ const Level = () => {
 							<tbody>
 								{/* biome-ignore lint/suspicious/noExplicitAny: <explanation> */}
 								{levels.map((item: any) => (
-									<tr key={0}>
+									<tr key={item.id}>
 										<td className="border-b border-[#eee] py-5 px-4 pl-9 dark:border-strokedark xl:pl-11">
 											<h5 className="font-medium text-black dark:text-white">
 												{item.title}
@@ -64,7 +72,7 @@ const Level = () => {
 											</p>
 										</td>
 
-										
+
 										<td className="border-b border-[#eee] py-5 px-4 pl-9 dark:border-strokedark xl:pl-11">
 											<h5 className="font-medium text-black dark:text-white">
 												{item.order}
@@ -85,6 +93,37 @@ const Level = () => {
 								))}
 							</tbody>
 						</table>
+						{levels.length === 0 && (
+							<div className='flex justify-center items-center'>
+								<div className='w-2/12'>
+									<DotLottieReact
+										src="/load.lottie"
+										loop
+										autoplay
+									/>
+								</div>
+							</div>
+						)}
+						{showError && (
+							<div>
+								<div className="mx-auto max-w-[410px]">
+									<img src="/illustration-01.svg" alt="illustration" />
+
+									<div className="mt-7.5 text-center">
+										<h2 className="mb-3 text-2xl font-bold text-black dark:text-white">
+											Sorry, an error occurred
+										</h2>
+										<p className="font-medium">
+											check your connection and try again, if it doesn't work, contact us
+										</p>
+										<button type='button' onClick={loadData} className="mt-7.5 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 font-medium text-white hover:bg-opacity-90">
+											<FontAwesomeIcon icon={faSpinner} className="fill-current" />
+											<span>Try again</span>
+										</button>
+									</div>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
