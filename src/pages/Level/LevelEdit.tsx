@@ -20,7 +20,7 @@ const LevelEdit = () => {
     const [title, setTitle] = useState<string>()
     const [active, setActive] = useState<boolean>()
     const [order, setOrder] = useState<number>(0)
-    const [questions] = useState<Question[]>([])
+    const [questions, setQuestions] = useState<Question[]>([])
     const [contents] = useState<Content[]>([])
     const [itemQuest, setItemQuest] = useState<nextItem[]>([])
     const [questEditTitle, setQuesEditTitle] = useState<string>('')
@@ -98,10 +98,8 @@ const LevelEdit = () => {
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
-
         loadDataLevel()
-
-    }, [id])
+    }, [id,questions])
 
     const sendEdit = () => {
         for (let i = 0; i < itemQuest.length; i++) {
@@ -312,8 +310,24 @@ const LevelEdit = () => {
                 type: questEditType,
                 levelId: id,
                 options: currentEditoptions
-            }).then((response) => {                
+            }).then(async (response) => {                
                 console.log(response)                
+                const quest: Question = new Question("")                                
+                const newItem: nextItem = { type: 'question', quest: quest }                
+                console.log(currentEditQuest?.id)
+                await setItemQuest((prev) => prev.map((item) => {
+                    if(item.type === 'question' && item.quest.id === currentEditQuest?.id){
+                        return newItem
+                    }
+                    return item
+                }))
+                await setQuestions((prev) => prev.map((item) => {
+                    if(item.id === currentEditQuest?.id){
+                        return quest
+                    }
+                    return item
+                }))
+                console.log(itemQuest)
                 loadDataLevel()
                 closeModal()
             }).catch(() => { })
